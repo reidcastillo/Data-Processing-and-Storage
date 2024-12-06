@@ -1,0 +1,89 @@
+class InMemoryDB:
+    def __init__(self):
+        self.db = {}
+        self.transaction = None
+
+    def begin_transaction(self):
+        if self.transaction is not None:
+            raise Exception("Transaction already in progress")
+        self.transaction = {}
+
+    def put(self, key, value):
+        if self.transaction is None:
+            raise Exception("No transaction in progress")
+        self.transaction[key] = value
+
+    def get(self, key):
+        if self.transaction and key in self.transaction:
+            return self.transaction[key]
+        return self.db.get(key, None)
+
+    def commit(self):
+        if self.transaction is None:
+            raise Exception("No transaction in progress")
+        self.db.update(self.transaction)
+        self.transaction = None
+
+    def rollback(self):
+        if self.transaction is None:
+            raise Exception("No transaction in progress")
+        self.transaction = None
+
+
+if __name__ == "__main__":
+    db = InMemoryDB()
+
+    print("Test Case 1: Get non-existent key")
+    print(db.get("A"))
+
+    print("\nTest Case 2: Put without a transaction")
+    try:
+        db.put("A", 5)
+    except Exception as e:
+        print(e)
+
+    print("\nTest Case 3: Start transaction, put, and commit")
+    db.begin_transaction()
+    db.put("A", 5)
+    print(db.get("A"))
+    db.put("A", 6)
+    db.commit()
+    print(db.get("A"))
+
+    print("\nTest Case 4: Commit without a transaction")
+    try:
+        db.commit()
+    except Exception as e:
+        print(e)
+
+    print("\nTest Case 5: Rollback without a transaction")
+    try:
+        db.rollback()
+    except Exception as e:
+        print(e)
+
+    print("\nTest Case 6: Rollback a transaction")
+    db.begin_transaction()
+    db.put("B", 10)
+    print(db.get("B"))
+    db.rollback()
+    print(db.get("B"))
+
+    print("\nTest Case 7: Multiple updates within a single transaction")
+    db.begin_transaction()
+    db.put("C", 20)
+    db.put("D", 30)
+    print(db.get("C"))
+    print(db.get("D"))
+    db.commit()
+    print(db.get("C"))
+    print(db.get("D"))
+
+    print("\nTest Case 8: Nested transactions")
+    db.begin_transaction()
+    try:
+        db.begin_transaction()
+    except Exception as e:
+        print(e)
+
+    db.rollback()
